@@ -1,0 +1,48 @@
+data has 1918 characters, 56 unique.
+----
+iter 0, loss: 100.633790
+----
+ .eimnoei
+ao
+i
+ nm  
+susz.
+lleo
+aa-o.
+. r-ze 
+hA g armauol
+. a e he ti .rere a orumoone -hat
+nelie i
+teeies
+
+ i .oodor m aiiuneddo c 
+o zuo temm 
+iuoi ms
+e i.mda pte
+
+hiolszll 
+-a.om
+-,.n
+ plrm
+h.s uai 
+----
+
+************
+
+----
+iter 824500, loss: 0.081751
+----
+ o titulo.
+
+Uma noite destas, vindo da cidade para o Engenho Novo, encontrei no
+trem da Central um rapaz aqui do bairro, que eu conheço de vista e
+de chapéo. Comprimentou-me, sentou-se ao pé de mim, fa 
+----
+iter 824600, loss: 0.081553
+----
+ gesto para tiral-os outra vez do bolso, mas não passou
+do gesto; estava amuado. No dia seguinte entrou a dizer de mim nomes
+feios, e acabou alcunhando-me _Dom Casmurro._ Os visinhos, que não
+gostam do 
+----
+iter 824700, loss: 0.081492
