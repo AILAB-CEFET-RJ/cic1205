@@ -163,3 +163,4 @@ cython_debug/
 notebooks/DL/data/
 notebooks/DL/mnist-logistic.pth
 notebooks/DL/oxford-iiit-pet.tgz
+notebooks/final_model.joblib
