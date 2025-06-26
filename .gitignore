@@ -166,3 +166,11 @@ notebooks/DL/oxford-iiit-pet.tgz
 notebooks/final_model.joblib
 
 temp/
+notebooks/DL/dataset/MNIST/raw/t10k-images-idx3-ubyte
+notebooks/DL/dataset/MNIST/raw/t10k-images-idx3-ubyte.gz
+notebooks/DL/dataset/MNIST/raw/t10k-labels-idx1-ubyte
+notebooks/DL/dataset/MNIST/raw/t10k-labels-idx1-ubyte.gz
+notebooks/DL/dataset/MNIST/raw/train-images-idx3-ubyte
+notebooks/DL/dataset/MNIST/raw/train-images-idx3-ubyte.gz
+notebooks/DL/dataset/MNIST/raw/train-labels-idx1-ubyte
+notebooks/DL/dataset/MNIST/raw/train-labels-idx1-ubyte.gz
