@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <title>Animação de uma Célula LSTM</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 30px;
+    }
+    .step {
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    .vector {
+      font-family: monospace;
+      background: #eef;
+      padding: 6px 12px;
+      border-radius: 6px;
+      margin: 5px 0;
+      display: inline-block;
+    }
+    .highlight {
+      background-color: #ffe08a;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 20px;
+    }
+    .section {
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <h2>🔁 Animação Interativa de uma Célula LSTM (1 passo de tempo)</h2>
+
+  <div id="animation"></div>
+
+  <button onclick="nextStep()">Próximo passo</button>
+
+  <script>
+    const steps = [
+      {
+        text: ">> Entrada no tempo t: xₜ = [0.5, 0.1], hₜ₋₁ = [0.4, -0.2], Cₜ₋₁ = [0.3, 0.0]",
+      },
+      {
+        text: ">> Etapa 1: Porta de Esquecimento (fₜ) = sigmoid(Wf · [hₜ₋₁, xₜ]) = [0.8, 0.2]",
+      },
+      {
+        text: ">> Etapa 2: Porta de Entrada (iₜ) = sigmoid(Wi · [hₜ₋₁, xₜ]) = [0.6, 0.4]",
+      },
+      {
+        text: ">> Etapa 3: Vetor candidato (C̃ₜ) = tanh(Wc · [hₜ₋₁, xₜ]) = [0.7, -0.1]",
+      },
+      {
+        text: ">> Etapa 4: Novo estado da célula Cₜ = fₜ ⊙ Cₜ₋₁ + iₜ ⊙ C̃ₜ = [0.8×0.3 + 0.6×0.7, 0.2×0 + 0.4×(-0.1)] = [0.66, -0.04]",
+      },
+      {
+        text: ">> Etapa 5: Porta de Saída (oₜ) = sigmoid(Wo · [hₜ₋₁, xₜ]) = [0.9, 0.3]",
+      },
+      {
+        text: " Etapa 6: Novo hₜ = oₜ ⊙ tanh(Cₜ) = [0.9×tanh(0.66), 0.3×tanh(-0.04)] ≈ [0.55, -0.01]",
+      },
+      {
+        text: " Saídas atualizadas: Cₜ = [0.66, -0.04], hₜ = [0.55, -0.01]"
+      }
+    ];
+
+    let currentStep = 0;
+    const container = document.getElementById("animation");
+
+    function nextStep() {
+      if (currentStep < steps.length) {
+        const div = document.createElement("div");
+        div.className = "step";
+        div.innerHTML = steps[currentStep].text;
+        container.appendChild(div);
+        currentStep++;
+      }
+    }
+  </script>
+</body>
+</html>

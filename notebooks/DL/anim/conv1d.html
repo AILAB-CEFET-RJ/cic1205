@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>1D Convolution Animation</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 40px;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    .sequence, .kernel, .output {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+    .box {
+      width: 40px;
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: 2px solid #333;
+      font-weight: bold;
+      background-color: #f0f0f0;
+    }
+    .active {
+      background-color: #ffe08a !important;
+      border-color: #e69900;
+    }
+    .result {
+      background-color: #add8e6;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>1D Convolution – Step-by-Step Animation</h2>
+
+    <div><strong>Input:</strong></div>
+    <div class="sequence" id="input-seq"></div>
+
+    <div><strong>Kernel: [1, 0, -1]</strong></div>
+    <div class="kernel" id="kernel"></div>
+
+    <div><strong>Convolution Output:</strong></div>
+    <div class="output" id="output-seq"></div>
+
+    <button onclick="nextStep()">Next Step</button>
+  </div>
+
+  <script>
+    const input = [0, 1, 2, 3, 4, 5, 4, 3, 2, 1];
+    const kernel = [1, 0, -1];
+    const output = [];
+    let step = 0;
+
+    const inputDiv = document.getElementById("input-seq");
+    const kernelDiv = document.getElementById("kernel");
+    const outputDiv = document.getElementById("output-seq");
+
+    // Initialize boxes
+    input.forEach(val => {
+      const box = document.createElement("div");
+      box.className = "box";
+      box.innerText = val;
+      inputDiv.appendChild(box);
+    });
+
+    kernel.forEach(val => {
+      const box = document.createElement("div");
+      box.className = "box";
+      box.innerText = val;
+      kernelDiv.appendChild(box);
+    });
+
+    for (let i = 0; i < input.length - kernel.length + 1; i++) {
+      const box = document.createElement("div");
+      box.className = "box result";
+      box.innerText = '';
+      outputDiv.appendChild(box);
+    }
+
+    function nextStep() {
+      if (step > input.length - kernel.length) return;
+
+      // Clear previous highlight
+      inputDiv.childNodes.forEach(node => node.classList.remove("active"));
+
+      if (step < input.length - kernel.length + 1) {
+        let sum = 0;
+        for (let j = 0; j < kernel.length; j++) {
+          const inputIdx = step + j;
+          inputDiv.childNodes[inputIdx].classList.add("active");
+          sum += input[inputIdx] * kernel[j];
+        }
+
+        outputDiv.childNodes[step].innerText = sum;
+      }
+
+      step++;
+    }
+  </script>
+</body>
+</html>
