@@ -175,3 +175,4 @@ notebooks/DL/dataset/MNIST/raw/train-images-idx3-ubyte.gz
 notebooks/DL/dataset/MNIST/raw/train-labels-idx1-ubyte
 notebooks/DL/dataset/MNIST/raw/train-labels-idx1-ubyte.gz
 .vscode/
+notebooks/DL/cifar10.tgz
