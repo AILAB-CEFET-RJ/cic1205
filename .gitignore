@@ -171,3 +171,12 @@ notebooks/deep_learning/cifar10.tgz
 notebooks/deep_learning/checkpoint.pt
 notebooks/deep_learning/cifar10.tgz
 notebooks/deep_learning/data/
+notebooks/DL/data/MNIST/raw/t10k-images-idx3-ubyte
+notebooks/DL/data/MNIST/raw/t10k-images-idx3-ubyte.gz
+notebooks/DL/data/MNIST/raw/t10k-labels-idx1-ubyte
+notebooks/DL/data/MNIST/raw/t10k-labels-idx1-ubyte.gz
+notebooks/DL/data/MNIST/raw/train-images-idx3-ubyte
+notebooks/DL/data/MNIST/raw/train-images-idx3-ubyte.gz
+notebooks/DL/data/MNIST/raw/train-labels-idx1-ubyte
+notebooks/DL/data/MNIST/raw/train-labels-idx1-ubyte.gz
+docs/.DS_Store
