@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Classification Threshold Demo</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg:        #0f1117;
+    --surface:   #181c27;
+    --border:    #2a2f3e;
+    --pos:       #f97316;   /* orange – positive class */
+    --neg:       #7c3aed;   /* violet – negative class */
+    --tp:        #f97316;
+    --tn:        #7c3aed;
+    --fp:        #ef4444;
+    --fn:        #facc15;
+    --text:      #e2e8f0;
+    --muted:     #64748b;
+    --accent:    #38bdf8;
+    --threshold-line: #f1f5f9;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    gap: 2rem;
+  }
+
+  h1 {
+    font-size: 1.1rem;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── Score strip ── */
+  .strip-wrapper {
+    width: 100%;
+    max-width: 780px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.6rem 1.6rem 1rem;
+    position: relative;
+  }
+
+  .strip-label {
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: .9rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* canvas for dots */
+  #dotCanvas {
+    width: 100%;
+    height: 90px;
+    display: block;
+  }
+
+  /* axis labels */
+  .axis-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: .68rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin-top: .3rem;
+    padding: 0 2px;
+  }
+
+  /* slider sits below the canvas, aligned to same width */
+  .slider-row {
+    margin-top: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .slider-row label {
+    font-size: .75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+  }
+
+  input[type=range] {
+    -webkit-appearance: none;
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    outline: none;
+    cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--threshold-line);
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+    cursor: grab;
+    transition: box-shadow .15s;
+  }
+  input[type=range]::-webkit-slider-thumb:active { cursor: grabbing; box-shadow: 0 0 0 4px var(--accent); }
+  input[type=range]::-moz-range-thumb {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    background: var(--threshold-line);
+    border: 3px solid var(--bg);
+    box-shadow: 0 0 0 2px var(--accent);
+    cursor: grab;
+  }
+
+  #alphaDisplay {
+    font-family: 'DM Mono', monospace;
+    font-size: .9rem;
+    font-weight: 500;
+    color: var(--accent);
+    min-width: 3.5rem;
+    text-align: right;
+  }
+
+  /* ── Bottom panel ── */
+  .bottom {
+    width: 100%;
+    max-width: 780px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+  }
+
+  /* Confusion matrix */
+  .cm-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.4rem;
+  }
+
+  .cm-title {
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .cm-grid {
+    display: grid;
+    grid-template-columns: auto 1fr 1fr;
+    grid-template-rows: auto 1fr 1fr;
+    gap: 4px;
+    font-size: .7rem;
+  }
+
+  .cm-corner { /* empty top-left */ }
+
+  .cm-col-label, .cm-row-label {
+    font-size: .65rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 4px 6px;
+    text-align: center;
+    line-height: 1.3;
+  }
+
+  .cm-row-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+    padding: 6px 4px;
+  }
+
+  .cm-cell {
+    border-radius: 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: .7rem .4rem;
+    gap: .2rem;
+    min-height: 72px;
+    transition: background .25s, transform .15s;
+  }
+
+  .cm-cell-label {
+    font-size: .62rem;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: .06em;
+    opacity: .7;
+  }
+
+  .cm-cell-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+    transition: color .25s;
+  }
+
+  .cell-tp { background: color-mix(in srgb, var(--tp) 18%, var(--surface)); }
+  .cell-tp .cm-cell-value { color: var(--tp); }
+
+  .cell-fn { background: color-mix(in srgb, var(--fn) 18%, var(--surface)); }
+  .cell-fn .cm-cell-value { color: var(--fn); }
+
+  .cell-fp { background: color-mix(in srgb, var(--fp) 18%, var(--surface)); }
+  .cell-fp .cm-cell-value { color: var(--fp); }
+
+  .cell-tn { background: color-mix(in srgb, var(--tn) 18%, var(--surface)); }
+  .cell-tn .cm-cell-value { color: var(--tn); }
+
+  /* Metrics panel */
+  .metrics-wrapper {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 1.4rem;
+    display: flex;
+    flex-direction: column;
+    gap: .8rem;
+  }
+
+  .metrics-title {
+    font-size: .72rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .metric-row {
+    display: flex;
+    flex-direction: column;
+    gap: .3rem;
+  }
+
+  .metric-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+
+  .metric-name {
+    font-size: .75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+  }
+
+  .metric-value {
+    font-size: .9rem;
+    font-weight: 600;
+    font-family: 'DM Mono', monospace;
+  }
+
+  .bar-track {
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width .3s cubic-bezier(.4,0,.2,1);
+  }
+
+  .bar-precision .bar-fill { background: var(--fp); }
+  .bar-recall    .bar-fill { background: var(--tp); }
+  .bar-f1        .bar-fill { background: var(--accent); }
+  .bar-precision .metric-value { color: var(--fp); }
+  .bar-recall    .metric-value { color: var(--tp); }
+  .bar-f1        .metric-value { color: var(--accent); }
+
+  /* legend */
+  .legend {
+    display: flex;
+    gap: 1.2rem;
+    font-size: .72rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    align-items: center;
+  }
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 4px;
+    flex-shrink: 0;
+  }
+  .legend-item { display: flex; align-items: center; }
+
+  /* pulse animation when value changes */
+  @keyframes pulse {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.18); }
+    100% { transform: scale(1); }
+  }
+  .pulse { animation: pulse .25s ease-out; }
+</style>
+</head>
+<body>
+
+<h1>Classification Threshold &mdash; Interactive Demo</h1>
+
+<div class="strip-wrapper">
+  <div class="strip-label">Predicted score distribution &nbsp;·&nbsp;
+    <span style="color:var(--pos)">● positive class</span> &nbsp;
+    <span style="color:var(--neg)">■ negative class</span>
+  </div>
+  <canvas id="dotCanvas"></canvas>
+  <div class="axis-row" id="axisRow"></div>
+  <div class="slider-row">
+    <label>Threshold α</label>
+    <input type="range" id="slider" min="0" max="100" value="50" step="1">
+    <span id="alphaDisplay">0.50</span>
+  </div>
+</div>
+
+<div class="bottom">
+  <div class="cm-wrapper">
+    <div class="cm-title">Confusion Matrix</div>
+    <div class="cm-grid">
+      <!-- row 0 -->
+      <div class="cm-corner"></div>
+      <div class="cm-col-label">Predicted<br>Positive</div>
+      <div class="cm-col-label">Predicted<br>Negative</div>
+      <!-- row 1 -->
+      <div class="cm-row-label">Actual Positive</div>
+      <div class="cm-cell cell-tp" id="cell-tp">
+        <span class="cm-cell-label">TP</span>
+        <span class="cm-cell-value" id="val-tp">—</span>
+      </div>
+      <div class="cm-cell cell-fn" id="cell-fn">
+        <span class="cm-cell-label">FN</span>
+        <span class="cm-cell-value" id="val-fn">—</span>
+      </div>
+      <!-- row 2 -->
+      <div class="cm-row-label">Actual Negative</div>
+      <div class="cm-cell cell-fp" id="cell-fp">
+        <span class="cm-cell-label">FP</span>
+        <span class="cm-cell-value" id="val-fp">—</span>
+      </div>
+      <div class="cm-cell cell-tn" id="cell-tn">
+        <span class="cm-cell-label">TN</span>
+        <span class="cm-cell-value" id="val-tn">—</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="metrics-wrapper">
+    <div class="metrics-title">Metrics</div>
+
+    <div class="metric-row bar-precision">
+      <div class="metric-header">
+        <span class="metric-name">Precision &nbsp;TP/(TP+FP)</span>
+        <span class="metric-value" id="val-prec">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-prec" style="width:0%"></div></div>
+    </div>
+
+    <div class="metric-row bar-recall">
+      <div class="metric-header">
+        <span class="metric-name">Recall &nbsp;TP/(TP+FN)</span>
+        <span class="metric-value" id="val-rec">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-rec" style="width:0%"></div></div>
+    </div>
+
+    <div class="metric-row bar-f1">
+      <div class="metric-header">
+        <span class="metric-name">F₁ score</span>
+        <span class="metric-value" id="val-f1">—</span>
+      </div>
+      <div class="bar-track"><div class="bar-fill" id="bar-f1" style="width:0%"></div></div>
+    </div>
+
+    <div class="metric-row" style="margin-top:auto">
+      <div class="metric-header">
+        <span class="metric-name" style="color:var(--muted)">Accuracy &nbsp;(TP+TN)/N</span>
+        <span class="metric-value" id="val-acc" style="color:var(--muted)">—</span>
+      </div>
+      <div class="bar-track">
+        <div class="bar-fill" id="bar-acc" style="width:0%; background:var(--muted)"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:.6rem; font-size:.65rem; color:var(--muted); font-family:'DM Mono',monospace; line-height:1.6">
+      N = 200 &nbsp;·&nbsp; 40 positives &nbsp;·&nbsp; 160 negatives
+    </div>
+  </div>
+</div>
+
+<script>
+// ── Synthetic dataset ────────────────────────────────────────────────────────
+// 200 examples: 40 positives (score ~ Beta(6,3)) and 160 negatives (score ~ Beta(2,7))
+// Generated deterministically so the page is reproducible.
+
+function betaSample(a, b, rng) {
+  // Johnk's method
+  while (true) {
+    const u = rng(), v = rng();
+    const x = Math.pow(u, 1/a), y = Math.pow(v, 1/b);
+    if (x + y <= 1) return x / (x + y);
+  }
+}
+
+// Simple seeded LCG
+function makeLCG(seed) {
+  let s = seed >>> 0;
+  return () => { s = (1664525 * s + 1013904223) >>> 0; return s / 4294967296; };
+}
+
+const rng = makeLCG(42);
+const examples = [];
+
+for (let i = 0; i < 40; i++)  examples.push({ score: betaSample(5, 2.5, rng), label: 1 });
+for (let i = 0; i < 160; i++) examples.push({ score: betaSample(2, 6,   rng), label: 0 });
+
+// Sort for reproducible stacking
+examples.sort((a, b) => a.score - b.score);
+
+// ── Canvas rendering ──────────────────────────────────────────────────────────
+const canvas = document.getElementById('dotCanvas');
+const ctx = canvas.getContext('2d');
+
+const BINS = 40;           // number of columns in the strip
+const DOT_R = 5;           // dot radius (logical px)
+const DOT_GAP = 2;         // vertical gap between stacked dots
+const STRIP_H = 90;        // canvas logical height
+
+function binExamples(threshold) {
+  const bins = Array.from({ length: BINS }, () => []);
+  for (const e of examples) {
+    const b = Math.min(BINS - 1, Math.floor(e.score * BINS));
+    bins[b].push(e);
+  }
+  return bins;
+}
+
+function drawStrip(threshold) {
+  const W = canvas.offsetWidth;
+  const H = STRIP_H;
+  canvas.width  = W * devicePixelRatio;
+  canvas.height = H * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  const bins = binExamples(threshold);
+  const binW = W / BINS;
+
+  // Background halves
+  const tx = threshold * W;
+  ctx.fillStyle = 'rgba(249,115,22,.07)';
+  ctx.fillRect(0, 0, tx, H);
+  ctx.fillStyle = 'rgba(124,58,237,.07)';
+  ctx.fillRect(tx, 0, W - tx, H);
+
+  // Dots
+  for (let b = 0; b < BINS; b++) {
+    const cx = (b + 0.5) * binW;
+    const stack = bins[b];
+    stack.forEach((e, i) => {
+      const cy = H - DOT_R - i * (DOT_R * 2 + DOT_GAP) - 4;
+      const predicted = e.score >= threshold ? 1 : 0;
+
+      ctx.beginPath();
+      ctx.arc(cx, cy, DOT_R, 0, Math.PI * 2);
+
+      if (e.label === 1 && predicted === 1) {       // TP
+        ctx.fillStyle = 'var(--tp)'; ctx.fill();
+      } else if (e.label === 1 && predicted === 0) { // FN
+        ctx.fillStyle = 'transparent';
+        ctx.strokeStyle = 'var(--fn)'; ctx.lineWidth = 1.5; ctx.stroke();
+        // X mark
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3); ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3); ctx.lineTo(cx - 3, cy + 3);
+        ctx.strokeStyle = 'var(--fn)'; ctx.lineWidth = 1.5; ctx.stroke();
+      } else if (e.label === 0 && predicted === 1) { // FP
+        ctx.fillStyle = 'var(--neg)'; ctx.fill();
+        // X mark overlay
+        ctx.beginPath();
+        ctx.moveTo(cx - 3, cy - 3); ctx.lineTo(cx + 3, cy + 3);
+        ctx.moveTo(cx + 3, cy - 3); ctx.lineTo(cx - 3, cy + 3);
+        ctx.strokeStyle = 'var(--fp)'; ctx.lineWidth = 1.5; ctx.stroke();
+      } else {                                        // TN
+        ctx.fillStyle = 'var(--neg)'; ctx.fill();
+      }
+    });
+  }
+
+  // Threshold line
+  ctx.beginPath();
+  ctx.moveTo(tx, 0); ctx.lineTo(tx, H);
+  ctx.strokeStyle = 'rgba(241,245,249,.75)';
+  ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Alpha label above line
+  const label = `α = ${threshold.toFixed(2)}`;
+  ctx.font = `500 11px 'DM Mono', monospace`;
+  ctx.fillStyle = 'rgba(241,245,249,.9)';
+  const lw = ctx.measureText(label).width;
+  const lx = Math.min(Math.max(tx - lw / 2, 2), W - lw - 2);
+  ctx.fillText(label, lx, 13);
+}
+
+// ── Axis labels ──────────────────────────────────────────────────────────────
+const axisRow = document.getElementById('axisRow');
+for (let i = 0; i <= 10; i++) {
+  const span = document.createElement('span');
+  span.textContent = (i / 10).toFixed(1);
+  axisRow.appendChild(span);
+}
+
+// ── Metrics update ───────────────────────────────────────────────────────────
+function animate(el) {
+  el.classList.remove('pulse');
+  void el.offsetWidth;
+  el.classList.add('pulse');
+}
+
+let prevCM = {};
+
+function updateMetrics(threshold) {
+  let TP = 0, FP = 0, TN = 0, FN = 0;
+  for (const e of examples) {
+    const pred = e.score >= threshold ? 1 : 0;
+    if (e.label === 1 && pred === 1) TP++;
+    else if (e.label === 1 && pred === 0) FN++;
+    else if (e.label === 0 && pred === 1) FP++;
+    else TN++;
+  }
+
+  const fmt = (v, total) => total === 0 ? 'N/A' : v.toFixed(2);
+  const prec = (TP + FP) === 0 ? null : TP / (TP + FP);
+  const rec  = (TP + FN) === 0 ? null : TP / (TP + FN);
+  const f1   = (prec !== null && rec !== null && (prec + rec) > 0)
+               ? 2 * prec * rec / (prec + rec) : null;
+  const acc  = TP + FP + TN + FN > 0 ? (TP + TN) / (TP + FP + TN + FN) : null;
+
+  const cells = { tp: TP, fn: FN, fp: FP, tn: TN };
+  for (const [k, v] of Object.entries(cells)) {
+    const el = document.getElementById(`val-${k}`);
+    if (prevCM[k] !== v) { el.textContent = v; animate(el); }
+    prevCM[k] = v;
+  }
+
+  document.getElementById('val-prec').textContent = prec !== null ? prec.toFixed(2) : 'N/A';
+  document.getElementById('val-rec').textContent  = rec  !== null ? rec.toFixed(2)  : 'N/A';
+  document.getElementById('val-f1').textContent   = f1   !== null ? f1.toFixed(2)   : 'N/A';
+  document.getElementById('val-acc').textContent  = acc  !== null ? acc.toFixed(2)  : 'N/A';
+
+  document.getElementById('bar-prec').style.width = prec !== null ? (prec * 100) + '%' : '0%';
+  document.getElementById('bar-rec').style.width  = rec  !== null ? (rec  * 100) + '%' : '0%';
+  document.getElementById('bar-f1').style.width   = f1   !== null ? (f1   * 100) + '%' : '0%';
+  document.getElementById('bar-acc').style.width  = acc  !== null ? (acc  * 100) + '%' : '0%';
+}
+
+// ── Slider ───────────────────────────────────────────────────────────────────
+const slider = document.getElementById('slider');
+const alphaDisplay = document.getElementById('alphaDisplay');
+
+function update() {
+  const alpha = slider.value / 100;
+  alphaDisplay.textContent = alpha.toFixed(2);
+  drawStrip(alpha);
+  updateMetrics(alpha);
+}
+
+slider.addEventListener('input', update);
+
+// ── Resize ───────────────────────────────────────────────────────────────────
+const ro = new ResizeObserver(update);
+ro.observe(canvas);
+
+// ── Init ─────────────────────────────────────────────────────────────────────
+update();
+</script>
+</body>
+</html>
