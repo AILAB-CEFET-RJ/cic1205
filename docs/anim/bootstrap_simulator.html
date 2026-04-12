@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bootstrap Sampling — Simulador Interativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:ital,wght@0,300;0,400;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #f7f5f0;
+    --surface:  #ffffff;
+    --surface2: #f0ede6;
+    --border:   #d8d3c8;
+    --border2:  #c4bdb0;
+    --text:     #1a1814;
+    --text2:    #6b6458;
+    --text3:    #9b9085;
+    --blue:     #1e4fa8;
+    --blue-bg:  #e8eef9;
+    --green:    #1a6b3a;
+    --green-bg: #e4f2ea;
+    --amber:    #8a5200;
+    --amber-bg: #fdf0d8;
+    --red:      #8b1a1a;
+    --red-bg:   #fde8e8;
+    --gray:     #6b6458;
+    --gray-bg:  #eeebe4;
+    --accent:   #1e4fa8;
+    --mono:     'JetBrains Mono', monospace;
+    --serif:    'Source Serif 4', Georgia, serif;
+  }
+
+  body {
+    font-family: var(--serif);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    padding: 0;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  /* ── Header ── */
+  header {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 1.5rem 2rem 1.25rem;
+  }
+  header .course {
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    color: var(--text3);
+    text-transform: uppercase;
+    margin-bottom: 0.25rem;
+  }
+  header h1 {
+    font-size: 1.55rem;
+    font-weight: 300;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  header h1 strong { font-weight: 600; }
+  header p {
+    font-size: 0.875rem;
+    color: var(--text2);
+    margin-top: 0.35rem;
+    font-style: italic;
+  }
+
+  /* ── Layout ── */
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem 4rem;
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+    align-items: start;
+  }
+
+  @media (max-width: 740px) {
+    main { grid-template-columns: 1fr; }
+  }
+
+  /* ── Cards ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .card-header {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+  .card-header h2 {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text2);
+  }
+  .card-body { padding: 1.25rem; }
+
+  /* ── Controls ── */
+  .control-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+  }
+  .control-row label {
+    font-size: 0.8rem;
+    font-family: var(--mono);
+    color: var(--text2);
+    white-space: nowrap;
+  }
+  input[type=range] {
+    -webkit-appearance: none;
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    flex: 1;
+    min-width: 80px;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    border: 2px solid var(--surface);
+    box-shadow: 0 0 0 1px var(--accent);
+  }
+  .range-val {
+    font-family: var(--mono);
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 20px;
+    text-align: right;
+    color: var(--accent);
+  }
+
+  /* ── Buttons ── */
+  .btn-row { display: flex; gap: 0.6rem; margin-bottom: 1rem; flex-wrap: wrap; }
+  button {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    padding: 0.45rem 0.9rem;
+    border-radius: 5px;
+    cursor: pointer;
+    border: 1px solid var(--border2);
+    background: var(--surface);
+    color: var(--text2);
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  button:hover { background: var(--surface2); color: var(--text); border-color: var(--border2); }
+  button.primary {
+    background: var(--accent);
+    color: #fff;
+    border-color: var(--accent);
+  }
+  button.primary:hover { background: #183e87; border-color: #183e87; }
+  button:active { transform: scale(0.97); }
+
+  /* ── Original pool ── */
+  #orig-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    padding: 0.75rem;
+    background: var(--surface2);
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    margin-bottom: 1.25rem;
+    min-height: 54px;
+  }
+
+  /* ── Example tokens ── */
+  .token {
+    width: 42px; height: 42px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    border: 1px solid transparent;
+    position: relative;
+    transition: transform 0.15s, opacity 0.15s;
+    flex-shrink: 0;
+  }
+  .token.orig {
+    background: var(--surface);
+    border-color: var(--border2);
+    color: var(--text2);
+  }
+  .token.sel {
+    background: var(--green-bg);
+    border-color: var(--green);
+    color: var(--green);
+  }
+  .token.dup {
+    background: var(--amber-bg);
+    border-color: var(--amber);
+    color: var(--amber);
+  }
+  .token.oob {
+    background: var(--gray-bg);
+    border-color: var(--border);
+    color: var(--text3);
+    opacity: 0.45;
+  }
+  .token .cnt {
+    position: absolute;
+    top: -6px; right: -6px;
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    background: var(--amber);
+    color: #fff;
+    font-size: 9px;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1.5px solid var(--surface);
+  }
+
+  /* ── Samples area ── */
+  #samples-area { display: flex; flex-direction: column; gap: 10px; }
+  .sample-block {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    animation: fadeIn 0.25s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity:1; transform: none; } }
+  .sample-block-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .sample-block-header .slabel {
+    font-family: var(--mono);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text2);
+    min-width: 28px;
+  }
+  .sample-tokens { display: flex; flex-wrap: wrap; gap: 6px; }
+
+  /* ── Badges ── */
+  .badge {
+    font-family: var(--mono);
+    font-size: 10px;
+    font-weight: 500;
+    padding: 2px 7px;
+    border-radius: 4px;
+    letter-spacing: 0.03em;
+  }
+  .badge-green { background: var(--green-bg); color: var(--green); border: 1px solid #b2d9bf; }
+  .badge-amber { background: var(--amber-bg); color: var(--amber); border: 1px solid #e8c87a; }
+  .badge-gray  { background: var(--gray-bg);  color: var(--gray);  border: 1px solid var(--border); }
+  .badge-blue  { background: var(--blue-bg);  color: var(--blue);  border: 1px solid #b0c6ef; }
+
+  /* ── Legend ── */
+  .legend {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+    font-size: 0.78rem;
+    color: var(--text2);
+    font-family: var(--mono);
+  }
+  .legend-item { display: flex; align-items: center; gap: 5px; }
+  .legend-dot {
+    width: 12px; height: 12px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    flex-shrink: 0;
+  }
+
+  /* ── Right panel stats ── */
+  .stats-col { display: flex; flex-direction: column; gap: 1rem; }
+
+  .stat-block {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .stat-block-header {
+    padding: 0.5rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: var(--text3);
+  }
+  .stat-block-body { padding: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+  .stat-row-item { display: flex; flex-direction: column; }
+  .stat-val {
+    font-family: var(--mono);
+    font-size: 1.65rem;
+    font-weight: 500;
+    color: var(--accent);
+    line-height: 1.1;
+  }
+  .stat-val.converging { color: var(--green); }
+  .stat-lbl { font-size: 0.75rem; color: var(--text2); margin-top: 2px; }
+  .stat-theory {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--text3);
+    padding: 0.4rem 0.7rem;
+    background: var(--surface2);
+    border-radius: 4px;
+    border: 1px solid var(--border);
+  }
+
+  /* ── Convergence bar ── */
+  .conv-bar-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+    height: 8px;
+    margin-top: 4px;
+  }
+  .conv-bar-fill {
+    height: 100%;
+    background: var(--accent);
+    transition: width 0.4s ease;
+    border-radius: 4px;
+  }
+  .conv-bar-target {
+    position: relative;
+    height: 8px;
+    margin-top: 2px;
+  }
+  .conv-target-line {
+    position: absolute;
+    top: 0; bottom: 0;
+    width: 2px;
+    background: var(--green);
+    opacity: 0.7;
+    left: 63.2%;
+  }
+
+  /* ── Theory section ── */
+  .theory-box {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    font-size: 0.85rem;
+    line-height: 1.8;
+  }
+  .theory-box h3 {
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.09em;
+    text-transform: uppercase;
+    color: var(--text3);
+    margin-bottom: 0.6rem;
+  }
+  .formula {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.6rem 0.9rem;
+    margin: 0.5rem 0;
+    color: var(--text);
+    line-height: 1.7;
+  }
+
+  /* ── Table ── */
+  .conv-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 12px;
+    margin-top: 0.75rem;
+  }
+  .conv-table th {
+    text-align: right;
+    font-weight: 500;
+    color: var(--text2);
+    border-bottom: 1px solid var(--border);
+    padding: 4px 10px 6px;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .conv-table th:first-child { text-align: center; }
+  .conv-table td {
+    padding: 4px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border);
+    color: var(--text);
+  }
+  .conv-table td:first-child { text-align: center; color: var(--accent); font-weight: 500; }
+  .conv-table tr:last-child td { border-bottom: none; color: var(--green); font-weight: 500; }
+  .conv-table tr:hover td { background: var(--surface2); }
+
+  /* ── Footer note ── */
+  .footnote {
+    grid-column: 1 / -1;
+    font-size: 0.78rem;
+    color: var(--text3);
+    font-style: italic;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="course">CIC1205 · Machine Learning · Ensemble Learning</div>
+  <h1><strong>Bootstrap Sampling</strong> — Simulador Interativo</h1>
+  <p>Observe como a amostragem com reposição gera diversidade entre os modelos base e converge para 1 − e⁻¹ ≈ 63,2% de exemplos únicos por amostra.</p>
+</header>
+
+<main>
+  <!-- Left column -->
+  <div>
+    <!-- Dataset original -->
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <h2>Dataset original 𝒟</h2>
+        <div class="control-row" style="margin:0;gap:0.6rem">
+          <label>tamanho <em>m</em> =</label>
+          <input type="range" id="m-slider" min="4" max="16" value="8">
+          <span class="range-val" id="m-val">8</span>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="orig-pool"></div>
+        <div class="legend">
+          <span class="legend-item">
+            <span class="legend-dot" style="background:var(--green-bg);border-color:var(--green)"></span> selecionado uma vez
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:var(--amber-bg);border-color:var(--amber)"></span> duplicado (×n)
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:var(--gray-bg);border-color:var(--border);opacity:.5"></span> ausente — OOB
+          </span>
+        </div>
+        <div class="btn-row">
+          <button class="primary" onclick="drawSamples(3)">↻ Sortear 3 amostras</button>
+          <button onclick="drawSamples(1)">1 amostra</button>
+          <button onclick="drawSamples(5)">5 amostras</button>
+          <button onclick="drawMany(500)">Acumular 500×</button>
+          <button onclick="resetStats()" style="color:var(--red);border-color:#e0b0b0">Resetar</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Samples -->
+    <div class="card">
+      <div class="card-header">
+        <h2>Amostras bootstrap geradas</h2>
+        <span id="draw-count" style="font-family:var(--mono);font-size:11px;color:var(--text3)">0 sorteios acumulados</span>
+      </div>
+      <div class="card-body">
+        <div id="samples-area">
+          <div style="font-size:0.85rem;color:var(--text3);font-style:italic;padding:0.5rem 0">
+            Clique em "Sortear 3 amostras" para começar.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div class="stats-col">
+
+    <!-- Live stats -->
+    <div class="stat-block">
+      <div class="stat-block-header">Estatísticas acumuladas</div>
+      <div class="stat-block-body">
+        <div class="stat-row-item">
+          <span class="stat-val" id="stat-unique">—</span>
+          <span class="stat-lbl">% únicos por amostra (média empírica)</span>
+          <div class="conv-bar-wrap" style="margin-top:6px">
+            <div class="conv-bar-fill" id="bar-unique" style="width:0%"></div>
+          </div>
+          <div style="position:relative;height:10px;margin-top:2px">
+            <div class="conv-target-line" title="valor teórico 63,2%"></div>
+            <span style="position:absolute;left:63.5%;font-family:var(--mono);font-size:9px;color:var(--green);top:0">63,2%</span>
+          </div>
+        </div>
+        <div class="stat-row-item">
+          <span class="stat-val" id="stat-oob">—</span>
+          <span class="stat-lbl">% OOB por amostra (média empírica)</span>
+        </div>
+        <div class="stat-theory">
+          teórico: 1 − e⁻¹ ≈ <strong>63,2%</strong> únicos<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;e⁻¹ ≈ <strong>36,8%</strong> OOB
+        </div>
+        <div class="stat-row-item">
+          <span class="stat-val" id="stat-n" style="font-size:1.1rem;color:var(--text2)">0</span>
+          <span class="stat-lbl">sorteios realizados</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Theory box -->
+    <div class="theory-box">
+      <h3>Derivação teórica</h3>
+      <p>P(exemplo <em>não</em> sorteado em 1 draw):</p>
+      <div class="formula">1 − 1/m</div>
+      <p>P(nunca sorteado em m draws):</p>
+      <div class="formula">(1 − 1/m)<sup>m</sup> → e<sup>−1</sup></div>
+      <p>Convergência numérica:</p>
+      <table class="conv-table">
+        <thead>
+          <tr>
+            <th>m</th>
+            <th>(1−1/m)<sup>m</sup></th>
+            <th>únicos</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>5</td><td>0.3277</td><td>67.2%</td></tr>
+          <tr><td>10</td><td>0.3487</td><td>65.1%</td></tr>
+          <tr><td>20</td><td>0.3585</td><td>64.2%</td></tr>
+          <tr><td>100</td><td>0.3660</td><td>63.4%</td></tr>
+          <tr><td>1000</td><td>0.3677</td><td>63.2%</td></tr>
+          <tr><td>∞</td><td>e⁻¹</td><td>63.2%</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <p class="footnote">
+    Simulador desenvolvido como material didático para CIC1205 — Machine Learning.
+    A convergência empírica para 1 − e⁻¹ ≈ 63,2% pode ser observada acumulando centenas de sorteios com o botão "Acumular 500×".
+  </p>
+</main>
+
+<script>
+  /* ── State ── */
+  let m = 8;
+  let totalDraws = 0;
+  let sumUnique = 0;
+
+  /* ── Palette: one hue per index, stable ── */
+  const HUE = [210, 145, 25, 340, 270, 180, 55, 0, 195, 310, 90, 230, 15, 165, 285];
+  function tokenColor(i) {
+    const h = HUE[i % HUE.length];
+    return { bg: `hsl(${h},60%,92%)`, border: `hsl(${h},50%,55%)`, text: `hsl(${h},55%,30%)` };
+  }
+
+  /* ── Render original pool ── */
+  function renderOrig() {
+    const pool = document.getElementById('orig-pool');
+    pool.innerHTML = '';
+    for (let i = 0; i < m; i++) {
+      const c = tokenColor(i);
+      const d = document.createElement('div');
+      d.className = 'token orig';
+      d.style.cssText = `background:${c.bg};border-color:${c.border};color:${c.text}`;
+      d.textContent = 'x' + (i + 1);
+      pool.appendChild(d);
+    }
+  }
+
+  /* ── Draw one bootstrap sample ── */
+  function drawOne() {
+    const drawn = [];
+    for (let i = 0; i < m; i++) drawn.push(Math.floor(Math.random() * m));
+    return drawn;
+  }
+
+  /* ── Build a sample block DOM element ── */
+  function buildSampleBlock(drawn, idx) {
+    const counts = {};
+    drawn.forEach(i => counts[i] = (counts[i] || 0) + 1);
+    const unique = Object.keys(counts).length;
+    const oob = m - unique;
+    const pct = Math.round(unique / m * 100);
+
+    const block = document.createElement('div');
+    block.className = 'sample-block';
+
+    const header = document.createElement('div');
+    header.className = 'sample-block-header';
+    header.innerHTML = `<span class="slabel">𝒟<sub>${idx}</sub></span>`;
+
+    const b1 = document.createElement('span');
+    b1.className = 'badge badge-green';
+    b1.textContent = unique + ' únicos';
+    header.appendChild(b1);
+
+    if (oob > 0) {
+      const b2 = document.createElement('span');
+      b2.className = 'badge badge-gray';
+      b2.textContent = oob + ' OOB';
+      header.appendChild(b2);
+    }
+
+    const diffFrom63 = Math.abs(pct - 63);
+    const b3 = document.createElement('span');
+    b3.className = 'badge ' + (diffFrom63 < 8 ? 'badge-blue' : 'badge-amber');
+    b3.textContent = pct + '% únicos';
+    header.appendChild(b3);
+
+    block.appendChild(header);
+
+    const tokRow = document.createElement('div');
+    tokRow.className = 'sample-tokens';
+
+    for (let i = 0; i < m; i++) {
+      const c = tokenColor(i);
+      const cnt = counts[i] || 0;
+      const d = document.createElement('div');
+
+      if (cnt === 0) {
+        d.className = 'token oob';
+        d.style.cssText = `background:var(--gray-bg);border-color:var(--border)`;
+        d.textContent = 'x' + (i + 1);
+      } else if (cnt === 1) {
+        d.className = 'token sel';
+        d.style.cssText = `background:${c.bg};border-color:${c.border};color:${c.text}`;
+        d.textContent = 'x' + (i + 1);
+      } else {
+        d.className = 'token dup';
+        d.style.cssText = `background:${c.bg};border-color:${c.border};color:${c.text};border-width:2px`;
+        d.textContent = 'x' + (i + 1);
+        const badge = document.createElement('span');
+        badge.className = 'cnt';
+        badge.textContent = cnt;
+        d.appendChild(badge);
+      }
+      tokRow.appendChild(d);
+    }
+
+    block.appendChild(tokRow);
+    return block;
+  }
+
+  /* ── Draw T samples and show them ── */
+  function drawSamples(T) {
+    const area = document.getElementById('samples-area');
+    area.innerHTML = '';
+    for (let t = 1; t <= T; t++) {
+      const drawn = drawOne();
+      const unique = new Set(drawn).size;
+      sumUnique += unique / m;
+      totalDraws++;
+      area.appendChild(buildSampleBlock(drawn, totalDraws - T + t));
+    }
+    updateStats();
+  }
+
+  /* ── Accumulate many draws without rendering each ── */
+  function drawMany(N) {
+    for (let i = 0; i < N; i++) {
+      const drawn = drawOne();
+      const unique = new Set(drawn).size;
+      sumUnique += unique / m;
+      totalDraws++;
+    }
+    const area = document.getElementById('samples-area');
+    area.innerHTML = `<div style="font-size:0.85rem;color:var(--text2);padding:0.5rem 0;font-style:italic">
+      ${N} sorteios realizados em modo rápido — veja a convergência nas estatísticas à direita.
+    </div>`;
+    updateStats();
+  }
+
+  /* ── Update stat panel ── */
+  function updateStats() {
+    const el = n => document.getElementById(n);
+    el('draw-count').textContent = totalDraws + ' sorteios acumulados';
+    el('stat-n').textContent = totalDraws;
+    if (totalDraws === 0) return;
+    const avg = sumUnique / totalDraws;
+    const pctU = (avg * 100).toFixed(1) + '%';
+    const pctO = ((1 - avg) * 100).toFixed(1) + '%';
+    el('stat-unique').textContent = pctU;
+    el('stat-oob').textContent = pctO;
+    if (Math.abs(avg - 0.632) < 0.015) {
+      el('stat-unique').classList.add('converging');
+    } else {
+      el('stat-unique').classList.remove('converging');
+    }
+    el('bar-unique').style.width = (avg * 100).toFixed(1) + '%';
+  }
+
+  /* ── Reset ── */
+  function resetStats() {
+    totalDraws = 0; sumUnique = 0;
+    document.getElementById('samples-area').innerHTML =
+      '<div style="font-size:0.85rem;color:var(--text3);font-style:italic;padding:0.5rem 0">Clique em "Sortear 3 amostras" para começar.</div>';
+    document.getElementById('stat-unique').textContent = '—';
+    document.getElementById('stat-oob').textContent = '—';
+    document.getElementById('stat-n').textContent = '0';
+    document.getElementById('draw-count').textContent = '0 sorteios acumulados';
+    document.getElementById('bar-unique').style.width = '0%';
+    document.getElementById('stat-unique').classList.remove('converging');
+  }
+
+  /* ── Slider ── */
+  document.getElementById('m-slider').addEventListener('input', function () {
+    m = parseInt(this.value);
+    document.getElementById('m-val').textContent = m;
+    resetStats();
+    renderOrig();
+  });
+
+  /* ── Init ── */
+  renderOrig();
+</script>
+</body>
+</html>

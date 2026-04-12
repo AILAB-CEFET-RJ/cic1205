@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bias–Variance Tradeoff — Simulador Interativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,600;1,8..60,300&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #f6f4ef;
+  --surface:   #ffffff;
+  --surface2:  #edeae2;
+  --border:    #d4cfc4;
+  --border2:   #bfb9ac;
+  --text:      #18160f;
+  --text2:     #6a6254;
+  --text3:     #9e9688;
+  --accent:    #1a4f9c;
+  --accent-bg: #e6edf8;
+  --green:     #1e6e3a;
+  --green-bg:  #e3f2e8;
+  --amber:     #8a5100;
+  --amber-bg:  #fdf0d5;
+  --red:       #8c1b1b;
+  --red-bg:    #fde8e8;
+  --mono:      'JetBrains Mono', monospace;
+  --serif:     'Source Serif 4', Georgia, serif;
+  --dot:       #1a4f9c;
+  --line:      #c0392b;
+  --true-fn:   #1e6e3a;
+}
+
+body {
+  font-family: var(--serif);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  font-size: 16px;
+  line-height: 1.6;
+}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1.4rem 2rem 1.2rem;
+}
+.course-tag {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 0.3rem;
+}
+header h1 {
+  font-size: 1.5rem;
+  font-weight: 300;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+header h1 strong { font-weight: 600; }
+header p {
+  font-size: 0.85rem;
+  color: var(--text2);
+  margin-top: 0.3rem;
+  font-style: italic;
+}
+
+/* ── Main layout ── */
+main {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 1.75rem 1.5rem 3rem;
+  display: grid;
+  grid-template-columns: 1fr 300px;
+  gap: 1.5rem;
+  align-items: start;
+}
+@media (max-width: 780px) {
+  main { grid-template-columns: 1fr; }
+}
+
+/* ── Cards ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.card-header {
+  padding: 0.65rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.card-header h2 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text2);
+}
+.card-body { padding: 1.2rem; }
+
+/* ── Canvas wrapper ── */
+#canvas-wrap {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 4/3;
+  background: var(--surface2);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  margin-bottom: 1rem;
+  cursor: crosshair;
+}
+canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+#canvas-label {
+  position: absolute;
+  top: 10px; left: 12px;
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 3px 9px;
+  border-radius: 4px;
+  pointer-events: none;
+  transition: background 0.3s, color 0.3s;
+}
+
+/* ── Degree slider ── */
+.slider-row {
+  display: flex;
+  align-items: center;
+  gap: 0.9rem;
+  margin-bottom: 0.9rem;
+  flex-wrap: wrap;
+}
+.slider-label {
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--text2);
+  white-space: nowrap;
+}
+input[type=range] {
+  -webkit-appearance: none;
+  flex: 1;
+  min-width: 100px;
+  height: 4px;
+  border-radius: 2px;
+  background: var(--border);
+  outline: none;
+  cursor: pointer;
+}
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  background: var(--accent);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 1.5px var(--accent);
+  cursor: pointer;
+  transition: transform 0.1s;
+}
+input[type=range]::-webkit-slider-thumb:hover { transform: scale(1.15); }
+.degree-badge {
+  font-family: var(--mono);
+  font-size: 16px;
+  font-weight: 600;
+  min-width: 28px;
+  text-align: center;
+  color: var(--accent);
+}
+
+/* ── Buttons ── */
+.btn-row {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.75rem;
+}
+button {
+  font-family: var(--mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  padding: 0.4rem 0.85rem;
+  border-radius: 5px;
+  border: 1px solid var(--border2);
+  background: var(--surface);
+  color: var(--text2);
+  cursor: pointer;
+  transition: background 0.15s, color 0.12s;
+}
+button:hover { background: var(--surface2); color: var(--text); }
+button.primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+button.primary:hover { background: #163e7a; }
+button:active { transform: scale(0.97); }
+
+.hint {
+  font-size: 0.76rem;
+  color: var(--text3);
+  font-style: italic;
+  margin-top: 0.2rem;
+}
+
+/* ── Metrics ── */
+.metric-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.metric-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.6rem 0.85rem;
+}
+.metric-card .val {
+  font-family: var(--mono);
+  font-size: 1.35rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+.metric-card .lbl {
+  font-size: 0.72rem;
+  color: var(--text2);
+  margin-top: 2px;
+  font-family: var(--mono);
+  letter-spacing: 0.03em;
+}
+
+/* ── Verdict banner ── */
+#verdict {
+  border-radius: 6px;
+  padding: 0.65rem 1rem;
+  font-family: var(--mono);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.04em;
+  transition: background 0.3s, color 0.3s, border-color 0.3s;
+  margin-bottom: 1rem;
+  border: 1px solid transparent;
+}
+
+/* ── Right panel ── */
+.right-col { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── Theory box ── */
+.theory-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.theory-section h3 {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--text3);
+  padding: 0.65rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+}
+.theory-body { padding: 1rem 1.2rem; font-size: 0.84rem; line-height: 1.75; }
+.formula {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  padding: 0.55rem 0.85rem;
+  margin: 0.6rem 0;
+  color: var(--text);
+  line-height: 1.8;
+}
+
+/* ── Degree table ── */
+.deg-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--mono);
+  font-size: 11.5px;
+}
+.deg-table th {
+  border-bottom: 1px solid var(--border);
+  padding: 5px 10px;
+  text-align: center;
+  font-weight: 500;
+  color: var(--text2);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+}
+.deg-table td {
+  padding: 5px 10px;
+  text-align: center;
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+.deg-table tr:last-child td { border-bottom: none; }
+.deg-table tr.active-row td { font-weight: 600; color: var(--accent); background: var(--accent-bg); }
+
+/* ── Legend ── */
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--text2);
+  font-family: var(--mono);
+  padding: 0.75rem 1.2rem;
+  border-top: 1px solid var(--border);
+}
+.legend-item { display: flex; align-items: center; gap: 7px; }
+.legend-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+}
+.legend-line {
+  width: 22px; height: 3px; border-radius: 2px; flex-shrink: 0;
+}
+.legend-dash {
+  width: 22px; height: 0; border-top: 2px dashed var(--true-fn); flex-shrink: 0;
+}
+
+/* ── Footer ── */
+footer {
+  grid-column: 1 / -1;
+  font-size: 0.75rem;
+  color: var(--text3);
+  font-style: italic;
+  border-top: 1px solid var(--border);
+  padding-top: 0.9rem;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="course-tag">CIC1205 · Machine Learning · Bias–Variance Tradeoff</div>
+  <h1><strong>Polynomial Fitting</strong> — Simulador Interativo</h1>
+  <p>Ajuste o grau d do polinômio e observe como o modelo transita entre underfitting, bom ajuste e overfitting.</p>
+</header>
+
+<main>
+  <!-- Left: canvas + controls -->
+  <div>
+    <div class="card" style="margin-bottom:1.25rem">
+      <div class="card-header">
+        <h2>Visualização</h2>
+        <div class="btn-row" style="margin:0">
+          <button onclick="generateData()" class="primary">↻ Novo dataset</button>
+          <button onclick="toggleTrueFn()">&#x2713; função verdadeira</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="canvas-wrap">
+          <canvas id="plot"></canvas>
+          <div id="canvas-label">—</div>
+        </div>
+
+        <div class="slider-row">
+          <span class="slider-label">grau <em>d</em> =</span>
+          <input type="range" id="deg-slider" min="1" max="12" value="1">
+          <span class="degree-badge" id="deg-val">1</span>
+        </div>
+
+        <div class="btn-row">
+          <button onclick="setDeg(1)">d = 1</button>
+          <button onclick="setDeg(2)">d = 2</button>
+          <button onclick="setDeg(3)">d = 3</button>
+          <button onclick="setDeg(5)">d = 5</button>
+          <button onclick="setDeg(8)">d = 8</button>
+          <button onclick="setDeg(12)">d = 12</button>
+        </div>
+        <p class="hint">Clique no gráfico para adicionar pontos. Arraste o slider para variar d.</p>
+
+        <div id="verdict">—</div>
+
+        <div class="metric-grid">
+          <div class="metric-card">
+            <div class="val" id="m-train" style="color:var(--accent)">—</div>
+            <div class="lbl">MSE treino</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="m-test" style="color:var(--red)">—</div>
+            <div class="lbl">MSE teste (≈ generalização)</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="m-bias">—</div>
+            <div class="lbl">viés² estimado</div>
+          </div>
+          <div class="metric-card">
+            <div class="val" id="m-var">—</div>
+            <div class="lbl">variância estimada</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right: theory + table -->
+  <div class="right-col">
+
+    <div class="theory-section">
+      <h3>Decomposição Bias–Variância</h3>
+      <div class="theory-body">
+        <p>O erro esperado de um modelo decompõe-se em:</p>
+        <div class="formula">
+          Erro = Bias² + Variância + Ruído
+        </div>
+        <p><strong>Bias²</strong> — erro sistemático. Modelos simples (d pequeno) não capturam a curvatura dos dados.</p>
+        <p style="margin-top:0.5rem"><strong>Variância</strong> — sensibilidade ao dataset. Modelos complexos (d grande) ajustam o ruído, mudando muito entre datasets.</p>
+        <p style="margin-top:0.5rem"><strong>Ruído</strong> — irreducível. Presente mesmo com o modelo perfeito.</p>
+      </div>
+      <div class="legend">
+        <div class="legend-item">
+          <div class="legend-dot" style="background:var(--dot);border:2px solid var(--dot)"></div>
+          pontos de treino
+        </div>
+        <div class="legend-item">
+          <div class="legend-dot" style="background:#e67e22;border:2px solid #e67e22"></div>
+          pontos de teste
+        </div>
+        <div class="legend-item">
+          <div class="legend-line" style="background:var(--line)"></div>
+          polinômio ajustado (grau d)
+        </div>
+        <div class="legend-item">
+          <div class="legend-dash"></div>
+          função verdadeira f(x)
+        </div>
+      </div>
+    </div>
+
+    <div class="theory-section">
+      <h3>Referência rápida por grau</h3>
+      <table class="deg-table" id="deg-table">
+        <thead>
+          <tr><th>d</th><th>regime</th><th>bias²</th><th>var</th></tr>
+        </thead>
+        <tbody>
+          <tr data-d="1"><td>1</td><td>underfit</td><td>alto</td><td>baixo</td></tr>
+          <tr data-d="2"><td>2</td><td>bom</td><td>baixo</td><td>baixo</td></tr>
+          <tr data-d="3"><td>3</td><td>bom</td><td>baixo</td><td>baixo</td></tr>
+          <tr data-d="4"><td>4</td><td>limite</td><td>baixo</td><td>médio</td></tr>
+          <tr data-d="5"><td>5</td><td>overfit</td><td>baixo</td><td>alto</td></tr>
+          <tr data-d="6"><td>6</td><td>overfit</td><td>baixo</td><td>alto</td></tr>
+          <tr data-d="7"><td>7–12</td><td>overfit</td><td>baixo</td><td>muito alto</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>
+
+  <footer>
+    Simulador desenvolvido como material didático para CIC1205 — Machine Learning.
+    A função verdadeira é f(x) = 0.25x² + 0.15x + 0.3 com ruído gaussiano σ = 0.3.
+    O MSE de teste é estimado avaliando o polinômio ajustado em 200 pontos gerados pela mesma distribuição.
+  </footer>
+</main>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG
+═══════════════════════════════════════════════════════ */
+const TRUE_FN   = x => 0.25*x*x + 0.15*x + 0.30;
+const NOISE_SD  = 0.30;
+const X_MIN     = 0.3, X_MAX = 4.8;
+const N_TRAIN   = 12;
+const N_TEST    = 200;
+const PAD       = { top:28, right:24, bottom:42, left:48 };
+
+/* ═══════════════════════════════════════════════════════
+   STATE
+═══════════════════════════════════════════════════════ */
+let degree      = 1;
+let showTrue    = true;
+let trainPts    = [];
+let testPts     = [];
+let coeffs      = [];
+
+/* ═══════════════════════════════════════════════════════
+   DATA GENERATION
+═══════════════════════════════════════════════════════ */
+function randn() {
+  let u = 0, v = 0;
+  while (!u) u = Math.random();
+  while (!v) v = Math.random();
+  return Math.sqrt(-2*Math.log(u)) * Math.cos(2*Math.PI*v);
+}
+
+function generateData() {
+  trainPts = [];
+  for (let i = 0; i < N_TRAIN; i++) {
+    const x = X_MIN + Math.random() * (X_MAX - X_MIN);
+    trainPts.push({ x, y: TRUE_FN(x) + randn() * NOISE_SD });
+  }
+  trainPts.sort((a, b) => a.x - b.x);
+
+  testPts = [];
+  for (let i = 0; i < N_TEST; i++) {
+    const x = X_MIN + Math.random() * (X_MAX - X_MIN);
+    testPts.push({ x, y: TRUE_FN(x) + randn() * NOISE_SD });
+  }
+
+  fitAndDraw();
+}
+
+/* ═══════════════════════════════════════════════════════
+   POLYNOMIAL FIT — least squares via normal equations
+   Uses Vandermonde + Gaussian elimination
+═══════════════════════════════════════════════════════ */
+function polyFit(pts, d) {
+  const n  = pts.length;
+  const nd = d + 1;
+  // Build (X^T X) and (X^T y)
+  const XtX = Array.from({length: nd}, () => new Array(nd).fill(0));
+  const Xty = new Array(nd).fill(0);
+  for (const p of pts) {
+    const row = [];
+    for (let k = 0; k <= d; k++) row.push(Math.pow(p.x, k));
+    for (let i = 0; i < nd; i++) {
+      Xty[i] += row[i] * p.y;
+      for (let j = 0; j < nd; j++) XtX[i][j] += row[i] * row[j];
+    }
+  }
+  // Gaussian elimination with partial pivoting
+  const aug = XtX.map((row, i) => [...row, Xty[i]]);
+  for (let col = 0; col < nd; col++) {
+    let maxRow = col;
+    for (let row = col+1; row < nd; row++)
+      if (Math.abs(aug[row][col]) > Math.abs(aug[maxRow][col])) maxRow = row;
+    [aug[col], aug[maxRow]] = [aug[maxRow], aug[col]];
+    if (Math.abs(aug[col][col]) < 1e-12) continue;
+    for (let row = 0; row < nd; row++) {
+      if (row === col) continue;
+      const f = aug[row][col] / aug[col][col];
+      for (let k = col; k <= nd; k++) aug[row][k] -= f * aug[col][k];
+    }
+  }
+  return aug.map((row, i) => (Math.abs(aug[i][i]) < 1e-12 ? 0 : row[nd] / aug[i][i]));
+}
+
+function polyEval(c, x) {
+  let v = 0, xk = 1;
+  for (let k = 0; k < c.length; k++) { v += c[k] * xk; xk *= x; }
+  return v;
+}
+
+/* ═══════════════════════════════════════════════════════
+   METRICS
+═══════════════════════════════════════════════════════ */
+function mse(pts, c) {
+  return pts.reduce((s, p) => s + (p.y - polyEval(c, p.x))**2, 0) / pts.length;
+}
+
+/* Bias² and variance estimated by bootstrap over training sets */
+function biasVariance(d, nBoots=40) {
+  const preds = [];
+  for (let b = 0; b < nBoots; b++) {
+    // resample train
+    const boot = Array.from({length: N_TRAIN}, () => {
+      const x = X_MIN + Math.random()*(X_MAX-X_MIN);
+      return { x, y: TRUE_FN(x) + randn()*NOISE_SD };
+    });
+    const c = polyFit(boot, d);
+    preds.push(c);
+  }
+  // evaluate on a grid
+  const xs = Array.from({length:50}, (_, i) => X_MIN + i*(X_MAX-X_MIN)/49);
+  let biasSum = 0, varSum = 0;
+  for (const x of xs) {
+    const ys    = preds.map(c => polyEval(c, x));
+    const mean  = ys.reduce((a,b)=>a+b,0)/ys.length;
+    const truth = TRUE_FN(x);
+    biasSum += (mean - truth)**2;
+    varSum  += ys.reduce((s,y)=>s+(y-mean)**2,0)/ys.length;
+  }
+  return { bias2: biasSum/xs.length, variance: varSum/xs.length };
+}
+
+/* ═══════════════════════════════════════════════════════
+   CANVAS DRAWING
+═══════════════════════════════════════════════════════ */
+const canvas = document.getElementById('plot');
+const ctx    = canvas.getContext('2d');
+
+function toCanvas(x, y, W, H) {
+  const cx = PAD.left + (x - X_MIN) / (X_MAX - X_MIN) * (W - PAD.left - PAD.right);
+  const cy = H - PAD.bottom - (y - Y_MIN) / (Y_MAX - Y_MIN) * (H - PAD.top - PAD.bottom);
+  return [cx, cy];
+}
+
+let Y_MIN = -0.5, Y_MAX = 7.5;
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  ctx.clearRect(0, 0, W, H);
+
+  // ── background ──
+  ctx.fillStyle = getComputedStyle(document.documentElement)
+                    .getPropertyValue('--surface2').trim() || '#edeae2';
+  ctx.fillRect(0, 0, W, H);
+
+  // ── grid ──
+  ctx.strokeStyle = 'rgba(0,0,0,0.07)';
+  ctx.lineWidth   = 1;
+  for (let gx = Math.ceil(X_MIN); gx <= X_MAX; gx++) {
+    const [cx] = toCanvas(gx, 0, W, H);
+    ctx.beginPath(); ctx.moveTo(cx, PAD.top); ctx.lineTo(cx, H-PAD.bottom); ctx.stroke();
+  }
+  for (let gy = 0; gy <= Y_MAX; gy += 1) {
+    const [, cy] = toCanvas(0, gy, W, H);
+    ctx.beginPath(); ctx.moveTo(PAD.left, cy); ctx.lineTo(W-PAD.right, cy); ctx.stroke();
+  }
+
+  // ── axes ──
+  ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+  ctx.lineWidth   = 1.5;
+  ctx.beginPath();
+  const [ax0, ay0] = toCanvas(X_MIN, Y_MIN, W, H);
+  const [ax1]      = toCanvas(X_MAX, Y_MIN, W, H);
+  const [, ay1]    = toCanvas(X_MIN, Y_MAX, W, H);
+  ctx.moveTo(ax0, ay0); ctx.lineTo(ax1, ay0); // x-axis
+  ctx.moveTo(ax0, ay1); ctx.lineTo(ax0, ay0); // y-axis
+  ctx.stroke();
+
+  // axis labels
+  ctx.fillStyle   = 'rgba(0,0,0,0.4)';
+  ctx.font        = '11px JetBrains Mono, monospace';
+  ctx.textAlign   = 'center';
+  for (let gx = 1; gx <= 4; gx++) {
+    const [cx] = toCanvas(gx, 0, W, H);
+    ctx.fillText(gx, cx, H - PAD.bottom + 14);
+  }
+  ctx.textAlign = 'right';
+  for (let gy = 0; gy <= 6; gy += 2) {
+    const [, cy] = toCanvas(0, gy, W, H);
+    ctx.fillText(gy, PAD.left - 6, cy + 4);
+  }
+  ctx.textAlign  = 'center';
+  ctx.fillStyle  = 'rgba(0,0,0,0.35)';
+  ctx.fillText('x', W - PAD.right + 4, H - PAD.bottom + 2);
+  ctx.textAlign  = 'left';
+  ctx.fillText('y', PAD.left - 6, PAD.top - 8);
+
+  // ── true function ──
+  if (showTrue) {
+    ctx.strokeStyle = '#1e6e3a';
+    ctx.lineWidth   = 1.8;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 200; i++) {
+      const x = X_MIN + i/200*(X_MAX-X_MIN);
+      const y = TRUE_FN(x);
+      const [cx, cy] = toCanvas(x, y, W, H);
+      first ? ctx.moveTo(cx,cy) : ctx.lineTo(cx,cy);
+      first = false;
+    }
+    ctx.stroke();
+    ctx.setLineDash([]);
+  }
+
+  // ── fitted polynomial ──
+  if (coeffs.length > 0) {
+    ctx.strokeStyle = '#c0392b';
+    ctx.lineWidth   = 2.5;
+    ctx.beginPath();
+    let first = true;
+    for (let i = 0; i <= 400; i++) {
+      const x = X_MIN + i/400*(X_MAX-X_MIN);
+      const y = polyEval(coeffs, x);
+      if (y < Y_MIN - 3 || y > Y_MAX + 3) { first = true; continue; }
+      const [cx, cy] = toCanvas(x, y, W, H);
+      first ? ctx.moveTo(cx,cy) : ctx.lineTo(cx,cy);
+      first = false;
+    }
+    ctx.stroke();
+  }
+
+  // ── test points ──
+  for (const p of testPts) {
+    const [cx, cy] = toCanvas(p.x, p.y, W, H);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, 2*Math.PI);
+    ctx.fillStyle   = 'rgba(230,126,34,0.35)';
+    ctx.strokeStyle = 'rgba(230,126,34,0.7)';
+    ctx.lineWidth   = 1;
+    ctx.fill(); ctx.stroke();
+  }
+
+  // ── train points ──
+  for (const p of trainPts) {
+    const [cx, cy] = toCanvas(p.x, p.y, W, H);
+    ctx.beginPath();
+    ctx.arc(cx, cy, 5, 0, 2*Math.PI);
+    ctx.fillStyle   = '#1a4f9c';
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth   = 1.5;
+    ctx.fill(); ctx.stroke();
+  }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FIT + UPDATE UI
+═══════════════════════════════════════════════════════ */
+function verdict(d, trainMSE, testMSE) {
+  const el = document.getElementById('verdict');
+  const ratio = testMSE / (trainMSE + 1e-9);
+  let text, bg, color, border;
+  if (d <= 1) {
+    text = `d = ${d} — Underfitting: modelo demasiado simples. Bias alto, variância baixa.`;
+    bg = '#fdf0d5'; color = '#8a5100'; border = '#e8c87a';
+  } else if (ratio < 2.5 && trainMSE < 0.25) {
+    text = `d = ${d} — Bom ajuste: bias e variância equilibrados.`;
+    bg = '#e3f2e8'; color = '#1e6e3a'; border = '#b2d9bf';
+  } else if (ratio > 4 || d >= 7) {
+    text = `d = ${d} — Overfitting: modelo memoriza ruído. Variância alta.`;
+    bg = '#fde8e8'; color = '#8c1b1b'; border = '#e0b0b0';
+  } else {
+    text = `d = ${d} — Transição: começando a overfit. Monitorar MSE teste.`;
+    bg = '#e6edf8'; color = '#1a4f9c'; border = '#b0c6ef';
+  }
+  el.textContent      = text;
+  el.style.background = bg;
+  el.style.color      = color;
+  el.style.borderColor= border;
+
+  // label on canvas
+  const lbl = document.getElementById('canvas-label');
+  lbl.textContent      = text.split('—')[1]?.trim().split(':')[0] || '';
+  lbl.style.background = bg;
+  lbl.style.color      = color;
+}
+
+function updateTable(d) {
+  const rows = document.querySelectorAll('#deg-table tbody tr');
+  rows.forEach(r => r.classList.remove('active-row'));
+  rows.forEach(r => {
+    const rd = parseInt(r.dataset.d);
+    if (d === rd || (d >= 7 && rd === 7)) r.classList.add('active-row');
+  });
+}
+
+function fitAndDraw() {
+  const eff = Math.min(degree, trainPts.length - 1);
+  coeffs    = polyFit(trainPts, eff);
+
+  const trainMSE = mse(trainPts, coeffs);
+  const testMSE  = mse(testPts,  coeffs);
+  const { bias2, variance } = biasVariance(eff);
+
+  document.getElementById('m-train').textContent = trainMSE.toFixed(4);
+  document.getElementById('m-test' ).textContent = testMSE.toFixed(4);
+  document.getElementById('m-bias' ).textContent = bias2.toFixed(4);
+  document.getElementById('m-var'  ).textContent = variance.toFixed(4);
+
+  verdict(degree, trainMSE, testMSE);
+  updateTable(degree);
+
+  // resize canvas to actual pixel size
+  const wrap = document.getElementById('canvas-wrap');
+  canvas.width  = wrap.clientWidth  * devicePixelRatio;
+  canvas.height = wrap.clientHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+
+  draw();
+}
+
+/* ═══════════════════════════════════════════════════════
+   EVENTS
+═══════════════════════════════════════════════════════ */
+document.getElementById('deg-slider').addEventListener('input', function () {
+  degree = parseInt(this.value);
+  document.getElementById('deg-val').textContent = degree;
+  fitAndDraw();
+});
+
+function setDeg(d) {
+  degree = d;
+  document.getElementById('deg-slider').value = d;
+  document.getElementById('deg-val').textContent = d;
+  fitAndDraw();
+}
+
+function toggleTrueFn() {
+  showTrue = !showTrue;
+  draw();
+}
+
+// Click to add training points
+canvas.addEventListener('click', e => {
+  const wrap  = document.getElementById('canvas-wrap');
+  const rect  = wrap.getBoundingClientRect();
+  const relX  = e.clientX - rect.left;
+  const relY  = e.clientY - rect.top;
+  const W     = wrap.clientWidth;
+  const H     = wrap.clientHeight;
+  const x = X_MIN + (relX - PAD.left) / (W - PAD.left - PAD.right) * (X_MAX - X_MIN);
+  const y = Y_MIN + (1 - (relY - PAD.top) / (H - PAD.top - PAD.bottom)) * (Y_MAX - Y_MIN);
+  if (x < X_MIN || x > X_MAX || y < Y_MIN || y > Y_MAX) return;
+  trainPts.push({ x, y });
+  fitAndDraw();
+});
+
+window.addEventListener('resize', fitAndDraw);
+
+/* ═══════════════════════════════════════════════════════
+   INIT
+═══════════════════════════════════════════════════════ */
+generateData();
+</script>
+</body>
+</html>
