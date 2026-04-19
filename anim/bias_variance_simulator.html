@@ -612,7 +612,8 @@ function toCanvas(x, y, W, H) {
 let Y_MIN = -0.5, Y_MAX = 7.5;
 
 function draw() {
-  const W = canvas.width, H = canvas.height;
+  const W = canvas.clientWidth;
+  const H = canvas.clientHeight;
   ctx.clearRect(0, 0, W, H);
 
   // ── background ──
@@ -763,25 +764,32 @@ function updateTable(d) {
 
 function fitAndDraw() {
   const eff = Math.min(degree, trainPts.length - 1);
-  coeffs    = polyFit(trainPts, eff);
+  coeffs = polyFit(trainPts, eff);
 
   const trainMSE = mse(trainPts, coeffs);
-  const testMSE  = mse(testPts,  coeffs);
+  const testMSE  = mse(testPts, coeffs);
   const { bias2, variance } = biasVariance(eff);
 
   document.getElementById('m-train').textContent = trainMSE.toFixed(4);
-  document.getElementById('m-test' ).textContent = testMSE.toFixed(4);
-  document.getElementById('m-bias' ).textContent = bias2.toFixed(4);
-  document.getElementById('m-var'  ).textContent = variance.toFixed(4);
+  document.getElementById('m-test').textContent  = testMSE.toFixed(4);
+  document.getElementById('m-bias').textContent  = bias2.toFixed(4);
+  document.getElementById('m-var').textContent   = variance.toFixed(4);
 
   verdict(degree, trainMSE, testMSE);
   updateTable(degree);
 
-  // resize canvas to actual pixel size
   const wrap = document.getElementById('canvas-wrap');
-  canvas.width  = wrap.clientWidth  * devicePixelRatio;
-  canvas.height = wrap.clientHeight * devicePixelRatio;
-  ctx.scale(devicePixelRatio, devicePixelRatio);
+  const cssWidth = wrap.clientWidth;
+  const cssHeight = wrap.clientHeight;
+  const dpr = window.devicePixelRatio || 1;
+
+  canvas.width = cssWidth * dpr;
+  canvas.height = cssHeight * dpr;
+  canvas.style.width = cssWidth + 'px';
+  canvas.style.height = cssHeight + 'px';
+
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.scale(dpr, dpr);
 
   draw();
 }
