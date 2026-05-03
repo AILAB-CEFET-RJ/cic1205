@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MLP Forward Pass Simulator</title>
+  <style>
+    :root {
+      --accent: #005aa0;
+      --accent-dark: #00447a;
+      --blue: #1e6ec8;
+      --blue-bg: #e8f2ff;
+      --green: #2d8a4d;
+      --green-bg: #e9f7ed;
+      --orange: #c56a1a;
+      --orange-bg: #fff0e1;
+      --gray: #666;
+      --light-gray: #f5f7fa;
+      --border: #d8dee9;
+      --text: #1f2937;
+      --mono-bg: #f8fafc;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #ffffff;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    header {
+      background: linear-gradient(135deg, var(--accent), #0d7cc4);
+      color: white;
+      padding: 1.5rem 2rem;
+    }
+
+    header h1 {
+      margin: 0 0 0.35rem 0;
+      font-size: clamp(1.5rem, 3vw, 2.2rem);
+    }
+
+    header p {
+      margin: 0;
+      max-width: 900px;
+      opacity: 0.95;
+    }
+
+    main {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      display: grid;
+      grid-template-columns: 360px 1fr;
+      gap: 1.25rem;
+    }
+
+    @media (max-width: 900px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      background: white;
+      box-shadow: 0 8px 24px rgba(15, 23, 42, 0.06);
+      overflow: hidden;
+    }
+
+    .card h2 {
+      font-size: 1.05rem;
+      margin: 0;
+      padding: 1rem 1rem 0.75rem;
+      color: var(--accent-dark);
+      border-bottom: 1px solid var(--border);
+      background: var(--light-gray);
+    }
+
+    .card-body {
+      padding: 1rem;
+    }
+
+    .controls {
+      display: grid;
+      gap: 1rem;
+    }
+
+    fieldset {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      margin: 0;
+    }
+
+    legend {
+      padding: 0 0.4rem;
+      font-weight: 700;
+      color: var(--accent-dark);
+      font-size: 0.92rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.7rem;
+    }
+
+    .grid-1 {
+      display: grid;
+      gap: 0.7rem;
+    }
+
+    label {
+      display: grid;
+      gap: 0.25rem;
+      font-size: 0.86rem;
+      color: #374151;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      padding: 0.5rem 0.55rem;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      font: inherit;
+      background: white;
+    }
+
+    input[type="number"]:focus {
+      outline: 2px solid rgba(0, 90, 160, 0.18);
+      border-color: var(--accent);
+    }
+
+    button {
+      border: 0;
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-size: 0.95rem;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-dark);
+    }
+
+    .btn-secondary {
+      background: #eef2f7;
+      color: #1f2937;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.75rem;
+    }
+
+    .note {
+      font-size: 0.86rem;
+      background: #fff8dc;
+      border: 1px solid #f0d98c;
+      border-radius: 12px;
+      padding: 0.8rem;
+      color: #4b3b00;
+    }
+
+    .right-col {
+      display: grid;
+      gap: 1.25rem;
+    }
+
+    .diagram-wrap {
+      overflow-x: auto;
+      padding: 0.75rem;
+    }
+
+    svg {
+      width: 100%;
+      min-width: 680px;
+      height: auto;
+      display: block;
+    }
+
+    .edge {
+      stroke: #8b949e;
+      stroke-width: 1.8;
+      marker-end: url(#arrow);
+    }
+
+    .edge-label {
+      font-size: 14px;
+      fill: #4b5563;
+      paint-order: stroke;
+      stroke: white;
+      stroke-width: 5px;
+      stroke-linejoin: round;
+    }
+
+    .neuron-text {
+      font-size: 15px;
+      font-weight: 700;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      fill: #111827;
+    }
+
+    .neuron-subtext {
+      font-size: 13px;
+      font-weight: 600;
+      text-anchor: middle;
+      dominant-baseline: middle;
+      fill: #111827;
+    }
+
+    .layer-label {
+      font-size: 18px;
+      font-weight: 800;
+      text-anchor: middle;
+    }
+
+    .small-label {
+      font-size: 13px;
+      fill: #6b7280;
+      text-anchor: middle;
+    }
+
+    .annotation {
+      fill: #f8fafc;
+      stroke: #d1d5db;
+      rx: 8;
+    }
+
+    .annotation-text {
+      font-size: 13px;
+      font-weight: 700;
+      text-anchor: middle;
+      fill: #111827;
+    }
+
+    .steps {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .step {
+      background: var(--mono-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.8rem;
+    }
+
+    .step-title {
+      font-weight: 800;
+      color: var(--accent-dark);
+      margin-bottom: 0.35rem;
+    }
+
+    .mathline {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 0.92rem;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 0.15rem 0;
+    }
+
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 0.75rem;
+    }
+
+    @media (max-width: 700px) {
+      .summary-grid {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+
+    .metric {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 0.75rem;
+      background: #ffffff;
+    }
+
+    .metric-name {
+      color: #6b7280;
+      font-size: 0.8rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+
+    .metric-value {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      font-size: 1.15rem;
+      font-weight: 800;
+      margin-top: 0.25rem;
+      color: #111827;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>MLP Forward Pass Simulator</h1>
+    <p>
+      Explore the computation performed by a small 2--2--1 neural network. Change inputs,
+      weights, and biases to see how pre-activations, activations, prediction, and loss change.
+    </p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Parameters</h2>
+      <div class="card-body controls">
+        <fieldset>
+          <legend>Input and target</legend>
+          <div class="grid-2">
+            <label>
+              x₁
+              <input id="x1" type="number" step="0.01" value="0.05" />
+            </label>
+            <label>
+              x₂
+              <input id="x2" type="number" step="0.01" value="0.10" />
+            </label>
+            <label>
+              true y
+              <input id="ytrue" type="number" step="0.01" value="0.01" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Hidden layer weights W⁽¹⁾</legend>
+          <div class="grid-2">
+            <label>
+              w₁₁⁽¹⁾: x₁ → a₁⁽¹⁾
+              <input id="w11" type="number" step="0.01" value="0.15" />
+            </label>
+            <label>
+              w₁₂⁽¹⁾: x₂ → a₁⁽¹⁾
+              <input id="w12" type="number" step="0.01" value="0.20" />
+            </label>
+            <label>
+              w₂₁⁽¹⁾: x₁ → a₂⁽¹⁾
+              <input id="w21" type="number" step="0.01" value="0.25" />
+            </label>
+            <label>
+              w₂₂⁽¹⁾: x₂ → a₂⁽¹⁾
+              <input id="w22" type="number" step="0.01" value="0.30" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Hidden layer biases b⁽¹⁾</legend>
+          <div class="grid-2">
+            <label>
+              b₁⁽¹⁾
+              <input id="b1" type="number" step="0.01" value="0.35" />
+            </label>
+            <label>
+              b₂⁽¹⁾
+              <input id="b2" type="number" step="0.01" value="0.35" />
+            </label>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend>Output layer weights and bias</legend>
+          <div class="grid-2">
+            <label>
+              w₁⁽²⁾: a₁⁽¹⁾ → ŷ
+              <input id="v1" type="number" step="0.01" value="0.40" />
+            </label>
+            <label>
+              w₂⁽²⁾: a₂⁽¹⁾ → ŷ
+              <input id="v2" type="number" step="0.01" value="0.45" />
+            </label>
+            <label>
+              b⁽²⁾
+              <input id="bout" type="number" step="0.01" value="0.60" />
+            </label>
+          </div>
+        </fieldset>
+
+        <div class="button-row">
+          <button class="btn-primary" id="computeBtn">Compute forward pass</button>
+          <button class="btn-secondary" id="resetBtn">Reset values</button>
+        </div>
+
+        <div class="note">
+          This simulator uses the sigmoid activation in the hidden and output layers:
+          <strong>sigmoid(z) = 1 / (1 + exp(-z))</strong>.
+        </div>
+      </div>
+    </section>
+
+    <section class="right-col">
+      <section class="card">
+        <h2>Network diagram</h2>
+        <div class="diagram-wrap">
+          <svg viewBox="0 0 980 460" role="img" aria-label="2-2-1 neural network forward pass diagram">
+            <defs>
+              <marker id="arrow" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+                <path d="M0,0 L0,6 L9,3 z" fill="#8b949e"></path>
+              </marker>
+            </defs>
+
+            <!-- Edges input to hidden -->
+            <line class="edge" x1="135" y1="120" x2="410" y2="120"></line>
+            <line class="edge" x1="135" y1="120" x2="410" y2="300"></line>
+            <line class="edge" x1="135" y1="300" x2="410" y2="120"></line>
+            <line class="edge" x1="135" y1="300" x2="410" y2="300"></line>
+
+            <!-- Edge labels input to hidden -->
+            <text id="lbl-w11" class="edge-label" x="270" y="104">0.15</text>
+            <text id="lbl-w21" class="edge-label" x="270" y="188" transform="rotate(33 270 188)">0.25</text>
+            <text id="lbl-w12" class="edge-label" x="270" y="232" transform="rotate(-33 270 232)">0.20</text>
+            <text id="lbl-w22" class="edge-label" x="270" y="326">0.30</text>
+
+            <!-- Edges hidden to output -->
+            <line class="edge" x1="465" y1="120" x2="730" y2="210"></line>
+            <line class="edge" x1="465" y1="300" x2="730" y2="210"></line>
+            <text id="lbl-v1" class="edge-label" x="585" y="148" transform="rotate(19 585 148)">0.40</text>
+            <text id="lbl-v2" class="edge-label" x="585" y="277" transform="rotate(-19 585 277)">0.45</text>
+
+            <!-- Input neurons -->
+            <circle cx="100" cy="120" r="40" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"></circle>
+            <text class="neuron-text" x="100" y="108">x₁</text>
+            <text id="node-x1" class="neuron-subtext" x="100" y="132">0.050</text>
+
+            <circle cx="100" cy="300" r="40" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"></circle>
+            <text class="neuron-text" x="100" y="288">x₂</text>
+            <text id="node-x2" class="neuron-subtext" x="100" y="312">0.100</text>
+
+            <!-- Hidden neurons -->
+            <circle cx="430" cy="120" r="45" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"></circle>
+            <text class="neuron-text" x="430" y="105">a₁⁽¹⁾</text>
+            <text id="node-a1" class="neuron-subtext" x="430" y="132">0.593</text>
+
+            <circle cx="430" cy="300" r="45" fill="var(--blue-bg)" stroke="var(--blue)" stroke-width="2"></circle>
+            <text class="neuron-text" x="430" y="285">a₂⁽¹⁾</text>
+            <text id="node-a2" class="neuron-subtext" x="430" y="312">0.597</text>
+
+            <!-- Output neuron -->
+            <circle cx="770" cy="210" r="48" fill="var(--orange-bg)" stroke="var(--orange)" stroke-width="2"></circle>
+            <text class="neuron-text" x="770" y="194">ŷ</text>
+            <text id="node-yhat" class="neuron-subtext" x="770" y="222">0.751</text>
+
+            <!-- Annotations -->
+            <rect class="annotation" x="370" y="18" width="120" height="54"></rect>
+            <text id="ann-z1" class="annotation-text" x="430" y="40">z₁⁽¹⁾ = 0.3775</text>
+            <text id="ann-z2" class="annotation-text" x="430" y="58">z₂⁽¹⁾ = 0.3925</text>
+
+            <rect class="annotation" x="710" y="80" width="130" height="36"></rect>
+            <text id="ann-zout" class="annotation-text" x="775" y="103">z⁽²⁾ = 1.1059</text>
+
+            <!-- Layer labels -->
+            <text class="layer-label" x="100" y="405" fill="var(--blue)">Input</text>
+            <text class="small-label" x="100" y="428">layer 0</text>
+
+            <text class="layer-label" x="430" y="405" fill="var(--blue)">Hidden</text>
+            <text class="small-label" x="430" y="428">layer 1</text>
+
+            <text class="layer-label" x="770" y="405" fill="var(--orange)">Output</text>
+            <text class="small-label" x="770" y="428">layer 2</text>
+          </svg>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Results</h2>
+        <div class="card-body">
+          <div class="summary-grid">
+            <div class="metric">
+              <div class="metric-name">z₁⁽¹⁾</div>
+              <div id="metric-z1" class="metric-value">0.3775</div>
+            </div>
+            <div class="metric">
+              <div class="metric-name">z₂⁽¹⁾</div>
+              <div id="metric-z2" class="metric-value">0.3925</div>
+            </div>
+            <div class="metric">
+              <div class="metric-name">ŷ</div>
+              <div id="metric-yhat" class="metric-value">0.7514</div>
+            </div>
+            <div class="metric">
+              <div class="metric-name">Loss</div>
+              <div id="metric-loss" class="metric-value">0.2748</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Step-by-step computation</h2>
+        <div class="card-body steps">
+          <div class="step">
+            <div class="step-title">1. Hidden layer pre-activations</div>
+            <div id="step-z1" class="mathline"></div>
+            <div id="step-z2" class="mathline"></div>
+          </div>
+          <div class="step">
+            <div class="step-title">2. Hidden layer activations</div>
+            <div id="step-a1" class="mathline"></div>
+            <div id="step-a2" class="mathline"></div>
+          </div>
+          <div class="step">
+            <div class="step-title">3. Output layer</div>
+            <div id="step-zout" class="mathline"></div>
+            <div id="step-yhat" class="mathline"></div>
+          </div>
+          <div class="step">
+            <div class="step-title">4. Prediction error</div>
+            <div id="step-loss" class="mathline"></div>
+          </div>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <script>
+    const defaults = {
+      x1: 0.05,
+      x2: 0.10,
+      ytrue: 0.01,
+      w11: 0.15,
+      w12: 0.20,
+      w21: 0.25,
+      w22: 0.30,
+      b1: 0.35,
+      b2: 0.35,
+      v1: 0.40,
+      v2: 0.45,
+      bout: 0.60
+    };
+
+    function sigmoid(z) {
+      return 1 / (1 + Math.exp(-z));
+    }
+
+    function readNumber(id) {
+      const value = Number(document.getElementById(id).value);
+      return Number.isFinite(value) ? value : 0;
+    }
+
+    function fmt(value, digits = 4) {
+      return Number(value).toFixed(digits);
+    }
+
+    function fmtWeight(value) {
+      return Number(value).toFixed(2);
+    }
+
+    function setText(id, value) {
+      document.getElementById(id).textContent = value;
+    }
+
+    function compute() {
+      const x1 = readNumber("x1");
+      const x2 = readNumber("x2");
+      const ytrue = readNumber("ytrue");
+
+      const w11 = readNumber("w11");
+      const w12 = readNumber("w12");
+      const w21 = readNumber("w21");
+      const w22 = readNumber("w22");
+      const b1 = readNumber("b1");
+      const b2 = readNumber("b2");
+
+      const v1 = readNumber("v1");
+      const v2 = readNumber("v2");
+      const bout = readNumber("bout");
+
+      const z1 = w11 * x1 + w12 * x2 + b1;
+      const z2 = w21 * x1 + w22 * x2 + b2;
+      const a1 = sigmoid(z1);
+      const a2 = sigmoid(z2);
+      const zout = v1 * a1 + v2 * a2 + bout;
+      const yhat = sigmoid(zout);
+      const loss = 0.5 * Math.pow(yhat - ytrue, 2);
+
+      // Diagram labels
+      setText("node-x1", fmt(x1, 3));
+      setText("node-x2", fmt(x2, 3));
+      setText("node-a1", fmt(a1, 3));
+      setText("node-a2", fmt(a2, 3));
+      setText("node-yhat", fmt(yhat, 3));
+
+      setText("lbl-w11", fmtWeight(w11));
+      setText("lbl-w12", fmtWeight(w12));
+      setText("lbl-w21", fmtWeight(w21));
+      setText("lbl-w22", fmtWeight(w22));
+      setText("lbl-v1", fmtWeight(v1));
+      setText("lbl-v2", fmtWeight(v2));
+
+      setText("ann-z1", `z₁⁽¹⁾ = ${fmt(z1, 4)}`);
+      setText("ann-z2", `z₂⁽¹⁾ = ${fmt(z2, 4)}`);
+      setText("ann-zout", `z⁽²⁾ = ${fmt(zout, 4)}`);
+
+      // Result cards
+      setText("metric-z1", fmt(z1, 4));
+      setText("metric-z2", fmt(z2, 4));
+      setText("metric-yhat", fmt(yhat, 4));
+      setText("metric-loss", fmt(loss, 4));
+
+      // Step-by-step text
+      setText(
+        "step-z1",
+        `z₁⁽¹⁾ = ${fmtWeight(w11)}(${fmt(x1, 2)}) + ${fmtWeight(w12)}(${fmt(x2, 2)}) + ${fmtWeight(b1)} = ${fmt(z1, 4)}`
+      );
+      setText(
+        "step-z2",
+        `z₂⁽¹⁾ = ${fmtWeight(w21)}(${fmt(x1, 2)}) + ${fmtWeight(w22)}(${fmt(x2, 2)}) + ${fmtWeight(b2)} = ${fmt(z2, 4)}`
+      );
+      setText("step-a1", `a₁⁽¹⁾ = sigmoid(${fmt(z1, 4)}) = ${fmt(a1, 4)}`);
+      setText("step-a2", `a₂⁽¹⁾ = sigmoid(${fmt(z2, 4)}) = ${fmt(a2, 4)}`);
+      setText(
+        "step-zout",
+        `z⁽²⁾ = ${fmtWeight(v1)}(${fmt(a1, 4)}) + ${fmtWeight(v2)}(${fmt(a2, 4)}) + ${fmtWeight(bout)} = ${fmt(zout, 4)}`
+      );
+      setText("step-yhat", `ŷ = sigmoid(${fmt(zout, 4)}) = ${fmt(yhat, 4)}`);
+      setText(
+        "step-loss",
+        `L = 1/2(ŷ − y)² = 1/2(${fmt(yhat, 4)} − ${fmt(ytrue, 4)})² = ${fmt(loss, 4)}`
+      );
+    }
+
+    function resetValues() {
+      for (const [id, value] of Object.entries(defaults)) {
+        document.getElementById(id).value = value;
+      }
+      compute();
+    }
+
+    document.getElementById("computeBtn").addEventListener("click", compute);
+    document.getElementById("resetBtn").addEventListener("click", resetValues);
+
+    // Recompute automatically when the user changes any input.
+    for (const id of Object.keys(defaults)) {
+      document.getElementById(id).addEventListener("input", compute);
+    }
+
+    compute();
+  </script>
+</body>
+</html>
