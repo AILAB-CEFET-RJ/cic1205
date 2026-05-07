@@ -13,3 +13,5 @@ seaborn-base=0.13.0
 statsmodels=0.14.0
 scikit-image
 xgboost=1.7.6
+umap-learn
+torch

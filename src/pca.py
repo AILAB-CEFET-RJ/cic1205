@@ -1,7 +1,7 @@
 import numpy as np
 from scipy import linalg as LA
 
-def pca(X, k):
+def pca(X, k, scale=False):
     print('**************')
 
     # centering the data matrix
@@ -9,6 +9,13 @@ def pca(X, k):
     print('mean vector: ' + str(mu))
     X_centered = X - mu  
     print('centered data:\n ' + str(X_centered))
+
+    if scale:
+        sigma = np.std(X_centered, axis=0, ddof=1)
+        sigma[sigma == 0] = 1
+        X_centered = X_centered / sigma
+        print('standard deviations: ' + str(sigma))
+        print('standardized data:\n ' + str(X_centered))
 
     Sigma = np.cov(X_centered, rowvar = False)
 
@@ -29,11 +36,15 @@ def pca(X, k):
     W = U[:, 0:k]
     print('U_redux:\n', str(W))
 
-    #Now we compute Z, the matrix of projected points in k-dimensional space.
-    Z = np.matmul(W.T,X.T)
-    print('Projected dataset (k=' + str(k) + '):\n' + str(Z.T))
+    # Now we compute Z, the matrix of projected points in k-dimensional space.
+    Z = np.matmul(X_centered, W)
+    print('Projected dataset (k=' + str(k) + '):\n' + str(Z))
     
     return W, Z
 
-def reconstruct_data(W, Z):
-    print('Reconstructed dataset:\n' + str(np.matmul(W, Z).T))
+def reconstruct_data(W, Z, mu=None):
+    X_reconstructed = np.matmul(Z, W.T)
+    if mu is not None:
+        X_reconstructed = X_reconstructed + mu
+    print('Reconstructed dataset:\n' + str(X_reconstructed))
+    return X_reconstructed

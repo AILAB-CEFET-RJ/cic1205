@@ -182,3 +182,4 @@ notebooks/DL/data/MNIST/raw/train-labels-idx1-ubyte.gz
 docs/.DS_Store
 .DS_Store
 .DS_Store
+.codex
