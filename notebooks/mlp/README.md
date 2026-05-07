@@ -25,12 +25,16 @@ These notebooks accompany `lecture_notes/16_mlp.pdf`.
 - `06_backpropagation_from_scratch.ipynb`
 - `07_training_loop_pytorch.ipynb`
 - `08_optimization_regularization_debugging.ipynb`
+- `09_mlp_sklearn_pipeline.ipynb`
+- `10_case_study_tabular_mlp.ipynb`
 
-## Existing Notebooks To Incorporate Later
+## Legacy Notebooks Retained
 
-- `backprop.ipynb`: should be replaced by or folded into `06_backpropagation_from_scratch.ipynb`.
-- `mlp_adult.ipynb`: can be converted into an optional applied notebook if network access is acceptable, or replaced by a local dataset.
-- `MLP_for_cred_dataset.ipynb`: current local-file case study candidate for item 10.
+The original notebooks are kept for reference and to avoid discarding local changes. The numbered sequence above is the primary companion material.
+
+- `backprop.ipynb`: superseded by `06_backpropagation_from_scratch.ipynb`.
+- `mlp_adult.ipynb`: retained as an optional older Adult tutorial; it is not part of the main sequence because it may require network access.
+- `MLP_for_cred_dataset.ipynb`: retained as the original credit-dataset workflow; `10_case_study_tabular_mlp.ipynb` provides the cleaned sequence version using the same local data files.
 
 ## Dependency Note
 
